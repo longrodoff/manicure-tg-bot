@@ -4,11 +4,12 @@ import os
 from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 load_dotenv()
 API_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID=1426090650
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
@@ -25,6 +26,38 @@ main_kb = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+
+@dp.message(Command("broadcast"))
+async def broadcast_handler(message: types.Message, command: CommandObject):
+    if message.from_user.id!=ADMIN_ID:
+        return
+    broadcast_text=command.args
+    if not broadcast_text:
+        await message.answer("⚠ Ошибка: введите текст после команды. \nПример: `/broadcast Привет всем!`")
+        return
+
+    user_ids=set()
+    try:
+        with open("clients.csv", "r", encoding="utf-8") as file:
+            reader=csv.reader(file)
+            for row in reader:
+                if row:
+                    user_ids.add(row[0])
+    except FileNotFoundError:
+        await message.answer("Файл из БД еще не создан.")
+        return
+
+    count=0
+    for user_id in user_ids:
+        try:
+            await bot.send_message(user_id, broadcast_text)
+            count+=1
+            await asyncio.sleep(0.05)
+        except Exception:
+            continue
+    await message.answer(f"Рассылка заверщена!\nДоставлено: '{count}' всем пользователям.")
+
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):

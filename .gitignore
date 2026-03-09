@@ -1,3 +1,4 @@
 .env
 clients.csv
 .venv/
+__pycache__/
